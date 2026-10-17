@@ -1,0 +1,6 @@
+{
+  "name": "AuraStream Cinema",
+  "description": "Platform streaming film sinematik premium dengan kurasi eksklusif, Google Authentication, dan integrasi video Google Drive & YouTube.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

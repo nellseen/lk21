@@ -1,0 +1,46 @@
+{
+  "rules": {
+    "movies": {
+      ".read": "auth != null",
+      ".indexOn": ["featured", "createdAt", "category"],
+      "$movieId": {
+        ".write": "auth != null && auth.token.email === 'cristiandwihariantoro@gmail.com' && auth.token.email_verified == true",
+        ".validate": "newData.hasChildren(['title', 'description', 'posterUrl', 'driveUrl', 'category', 'featured', 'createdAt', 'updatedAt'])",
+        "title": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+        },
+        "description": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 5000"
+        },
+        "posterUrl": {
+          ".validate": "newData.isString() && newData.val().length > 0 && (newData.val().beginsWith('http://') || newData.val().beginsWith('https://'))"
+        },
+        "trailerUrl": {
+          ".validate": "newData.isString()"
+        },
+        "driveUrl": {
+          ".validate": "newData.isString() && newData.val().length > 0 && (newData.val().beginsWith('http://') || newData.val().beginsWith('https://'))"
+        },
+        "category": {
+          ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50"
+        },
+        "featured": {
+          ".validate": "newData.isBoolean()"
+        },
+        "createdAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "updatedAt": {
+          ".validate": "newData.isNumber()"
+        },
+        "$other": {
+          ".validate": false
+        }
+      }
+    },
+    "$other": {
+      ".read": false,
+      ".write": false
+    }
+  }
+}
