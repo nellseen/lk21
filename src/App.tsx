@@ -59,15 +59,8 @@ export default function App() {
               <Route path="/search" element={<SearchPage />} />
               <Route path="/movie/:id" element={<MovieDetailPage />} />
 
-              {/* Streaming Watch Page (Requires Google Authentication) */}
-              <Route
-                path="/watch/:id"
-                element={
-                  <ProtectedRoute>
-                    <WatchPage />
-                  </ProtectedRoute>
-                }
-              />
+              {/* Streaming Watch Page (Bebas ditonton tanpa perlu login) */}
+              <Route path="/watch/:id" element={<WatchPage />} />
 
               {/* Admin Routes (Restricted strictly to cristiandwihariantoro@gmail.com) */}
               <Route
