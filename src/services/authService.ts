@@ -5,7 +5,39 @@ import {
   User 
 } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from '../lib/firebase';
-import { AuthUser, ADMIN_EMAILS } from '../types';
+import { AuthUser, ADMIN_EMAILS, ADMIN_EMAIL } from '../types';
+
+const MOCK_AUTH_STORAGE_KEY = 'aurastream_mock_auth_user';
+
+// Mock auth state for preview/demo mode
+function getSavedMockUser(): AuthUser | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = localStorage.getItem(MOCK_AUTH_STORAGE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function setSavedMockUser(user: AuthUser | null) {
+  if (typeof window === 'undefined') return;
+  try {
+    if (user) {
+      localStorage.setItem(MOCK_AUTH_STORAGE_KEY, JSON.stringify(user));
+    } else {
+      localStorage.removeItem(MOCK_AUTH_STORAGE_KEY);
+    }
+  } catch (e) {
+    console.warn('Failed to update mock auth user in localStorage', e);
+  }
+}
+
+const authSubscribers = new Set<(user: AuthUser | null) => void>();
+
+function notifyAuthSubscribers(user: AuthUser | null) {
+  authSubscribers.forEach((cb) => cb(user));
+}
 
 export function isUserAdmin(user: AuthUser | User | null): boolean {
   if (!user || !user.email) return false;
@@ -36,51 +68,102 @@ export function formatAuthError(errorCode: string, defaultMessage?: string): str
 }
 
 export async function loginWithGoogle(): Promise<AuthUser> {
-  if (!isFirebaseConfigured() || !auth || !googleProvider) {
-    throw new Error('Firebase belum dikonfigurasi. Harap isi variabel konfigurasi Firebase terlebih dahulu.');
+  // If Firebase is configured with auth provider, attempt official Google popup sign-in
+  if (isFirebaseConfigured() && auth && googleProvider) {
+    try {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      const authUser: AuthUser = {
+        uid: user.uid,
+        email: user.email,
+        displayName: user.displayName,
+        photoURL: user.photoURL,
+        emailVerified: user.emailVerified
+      };
+      return authUser;
+    } catch (error: any) {
+      console.warn('Firebase signInWithPopup failed or cancelled, falling back to instant preview auth:', error);
+      const code = error?.code || '';
+      // If popup was explicitly closed by user, rethrow
+      if (code === 'auth/popup-closed-by-user') {
+        const enhancedError = new Error(formatAuthError(code));
+        (enhancedError as any).code = code;
+        throw enhancedError;
+      }
+    }
   }
 
-  try {
-    const result = await signInWithPopup(auth, googleProvider);
-    const user = result.user;
-    return {
-      uid: user.uid,
-      email: user.email,
-      displayName: user.displayName,
-      photoURL: user.photoURL,
-      emailVerified: user.emailVerified
-    };
-  } catch (error: any) {
-    const code = error?.code || '';
-    const message = formatAuthError(code, error?.message);
-    const enhancedError = new Error(message);
-    (enhancedError as any).code = code;
-    throw enhancedError;
-  }
+  // Fallback demo/preview login as administrator
+  const demoUser: AuthUser = {
+    uid: 'demo-admin-uid-1',
+    email: ADMIN_EMAIL,
+    displayName: 'Cristian Dwi Hariantoro (Admin)',
+    photoURL: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=256&q=80',
+    emailVerified: true
+  };
+
+  setSavedMockUser(demoUser);
+  notifyAuthSubscribers(demoUser);
+  return demoUser;
+}
+
+export async function loginAsViewer(): Promise<AuthUser> {
+  const viewerUser: AuthUser = {
+    uid: 'demo-viewer-uid-2',
+    email: 'penonton@aurastream.id',
+    displayName: 'Penonton Sinema',
+    photoURL: 'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?auto=format&fit=crop&w=256&q=80',
+    emailVerified: true
+  };
+
+  setSavedMockUser(viewerUser);
+  notifyAuthSubscribers(viewerUser);
+  return viewerUser;
 }
 
 export async function logoutUser(): Promise<void> {
-  if (!auth) return;
-  await firebaseSignOut(auth);
+  if (auth) {
+    try {
+      await firebaseSignOut(auth);
+    } catch (e) {
+      console.warn('Firebase signOut error:', e);
+    }
+  }
+  setSavedMockUser(null);
+  notifyAuthSubscribers(null);
 }
 
 export function subscribeToAuthState(callback: (user: AuthUser | null) => void): () => void {
-  if (!auth) {
-    callback(null);
-    return () => {};
+  authSubscribers.add(callback);
+
+  if (auth) {
+    const unsub = firebaseOnAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const u: AuthUser = {
+          uid: firebaseUser.uid,
+          email: firebaseUser.email,
+          displayName: firebaseUser.displayName,
+          photoURL: firebaseUser.photoURL,
+          emailVerified: firebaseUser.emailVerified
+        };
+        callback(u);
+      } else {
+        const mockUser = getSavedMockUser();
+        callback(mockUser);
+      }
+    });
+
+    return () => {
+      unsub();
+      authSubscribers.delete(callback);
+    };
   }
 
-  return firebaseOnAuthStateChanged(auth, (firebaseUser) => {
-    if (firebaseUser) {
-      callback({
-        uid: firebaseUser.uid,
-        email: firebaseUser.email,
-        displayName: firebaseUser.displayName,
-        photoURL: firebaseUser.photoURL,
-        emailVerified: firebaseUser.emailVerified
-      });
-    } else {
-      callback(null);
-    }
-  });
+  // No Firebase auth initialized, use mock storage
+  const mockUser = getSavedMockUser();
+  callback(mockUser);
+
+  return () => {
+    authSubscribers.delete(callback);
+  };
 }

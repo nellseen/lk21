@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { AuthUser, ADMIN_EMAIL } from '../types';
-import { loginWithGoogle, logoutUser, subscribeToAuthState, isUserAdmin } from '../services/authService';
+import { loginWithGoogle, loginAsViewer, logoutUser, subscribeToAuthState, isUserAdmin } from '../services/authService';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -8,6 +8,7 @@ interface AuthContextType {
   isAdmin: boolean;
   error: string | null;
   login: () => Promise<void>;
+  loginAsViewer: () => Promise<void>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -20,7 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Listen to Firebase auth state changes
+    // Listen to Firebase or mock auth state changes
     const unsubscribe = subscribeToAuthState((currentUser) => {
       setUser(currentUser);
       setLoading(false);
@@ -36,6 +37,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(loggedUser);
     } catch (err: any) {
       setError(err?.message || 'Login gagal.');
+      throw err;
+    }
+  };
+
+  const loginViewer = async () => {
+    setError(null);
+    try {
+      const loggedUser = await loginAsViewer();
+      setUser(loggedUser);
+    } catch (err: any) {
+      setError(err?.message || 'Login penonton gagal.');
       throw err;
     }
   };
@@ -63,6 +75,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         isAdmin,
         error,
         login,
+        loginAsViewer: loginViewer,
         logout,
         clearError
       }}

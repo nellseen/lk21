@@ -7,8 +7,8 @@ import { useAuth } from '../../hooks/useAuth';
 export const FirebaseConfigNotice: React.FC = () => {
   const { user, isAdmin } = useAuth();
   const isConfigured = isFirebaseConfigured();
-  // Only auto-open if not configured AND either not logged in or is admin
-  const [isOpen, setIsOpen] = useState(!isConfigured && (!user || isAdmin));
+  // Do not block initial render; open only on user demand
+  const [isOpen, setIsOpen] = useState(false);
 
   const getSaved = () => {
     if (typeof window === 'undefined') return null;

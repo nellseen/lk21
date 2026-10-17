@@ -72,13 +72,23 @@ export const AdminDashboardPage: React.FC = () => {
             </p>
           </div>
 
-          <Link
-            to="/admin/upload"
-            className="gold-button px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xl hover:scale-105 transition-transform shrink-0"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Film Baru</span>
-          </Link>
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <button
+              onClick={() => window.dispatchEvent(new CustomEvent('open-firebase-config'))}
+              className="px-4 py-3 rounded-xl glass-card border border-amber-500/30 text-amber-300 text-xs font-semibold flex items-center gap-2 hover:bg-amber-500/10 transition-colors cursor-pointer"
+              title="Hubungkan Firebase Realtime Database"
+            >
+              <Sparkles className="w-4 h-4 text-[var(--color-gold-primary)]" />
+              <span>Konfigurasi Firebase</span>
+            </button>
+            <Link
+              to="/admin/upload"
+              className="gold-button px-5 py-3 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xl hover:scale-105 transition-transform shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Tambah Film Baru</span>
+            </Link>
+          </div>
         </div>
 
         {/* Action Error Banner */}

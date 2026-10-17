@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Navigate } from 'react-router-dom';
-import { Film, Shield, Sparkles, AlertCircle, Loader2 } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Film, Shield, AlertCircle, Loader2, UserCheck, Sparkles } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { isFirebaseConfigured } from '../lib/firebase';
 import { ADMIN_EMAIL } from '../types';
 
 export const LoginPage: React.FC = () => {
-  const { user, loading, login, error, clearError, isAdmin } = useAuth();
+  const { user, loading, login, loginAsViewer, error, clearError } = useAuth();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
   const [localError, setLocalError] = useState<string | null>(null);
 
@@ -27,17 +27,25 @@ export const LoginPage: React.FC = () => {
     setLocalError(null);
     clearError();
 
-    if (!isFirebaseConfigured()) {
-      setLocalError('Firebase belum dikonfigurasi. Harap tentukan variabel VITE_FIREBASE_* pada .env sebelum login.');
-      setIsLoggingIn(false);
-      return;
-    }
-
     try {
       await login();
       // On success, useEffect will redirect
     } catch (err: any) {
       setLocalError(err?.message || 'Login gagal. Silakan coba kembali.');
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
+  const handleViewerLogin = async () => {
+    setIsLoggingIn(true);
+    setLocalError(null);
+    clearError();
+
+    try {
+      await loginAsViewer();
+    } catch (err: any) {
+      setLocalError(err?.message || 'Login penonton gagal.');
     } finally {
       setIsLoggingIn(false);
     }
@@ -50,6 +58,8 @@ export const LoginPage: React.FC = () => {
       </div>
     );
   }
+
+  const isConfigured = isFirebaseConfigured();
 
   return (
     <div className="min-h-screen relative flex items-center justify-center px-4 py-12 overflow-hidden bg-black">
@@ -78,9 +88,18 @@ export const LoginPage: React.FC = () => {
           Cinema Exclusive Sanctuary
         </p>
 
-        <p className="text-sm text-zinc-300 leading-relaxed mb-8">
+        <p className="text-sm text-zinc-300 leading-relaxed mb-6">
           Akses seluruh katalog film sinematik eksklusif, trailer resmi, dan streaming Google Drive berkecepatan tinggi.
         </p>
+
+        {!isConfigured && (
+          <div className="mb-6 p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-300 text-xs text-left flex items-start gap-2.5">
+            <Sparkles className="w-4 h-4 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              <strong>Mode Demo / Pratinjau Aktif:</strong> Klik tombol masuk di bawah untuk langsung mencoba panel administrator secara instan.
+            </p>
+          </div>
+        )}
 
         {/* Error Notice */}
         {(localError || error) && (
@@ -93,48 +112,58 @@ export const LoginPage: React.FC = () => {
           </div>
         )}
 
-        {/* Google Sign-In Button */}
-        <button
-          onClick={handleGoogleLogin}
-          disabled={isLoggingIn}
-          className="w-full py-4 px-6 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-900 font-bold text-sm flex items-center justify-center gap-3.5 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
-        >
-          {isLoggingIn ? (
-            <>
-              <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
-              <span>Menghubungkan ke Google...</span>
-            </>
-          ) : (
-            <>
-              {/* Google Brand SVG */}
-              <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                />
-              </svg>
-              <span>Lanjutkan dengan Google</span>
-            </>
-          )}
-        </button>
+        {/* Buttons */}
+        <div className="space-y-3">
+          <button
+            onClick={handleGoogleLogin}
+            disabled={isLoggingIn}
+            className="w-full py-3.5 px-6 rounded-2xl bg-white hover:bg-zinc-100 text-zinc-900 font-bold text-sm flex items-center justify-center gap-3 shadow-xl hover:shadow-2xl transition-all duration-300 cursor-pointer disabled:opacity-50 active:scale-[0.98]"
+          >
+            {isLoggingIn ? (
+              <>
+                <Loader2 className="w-5 h-5 text-amber-600 animate-spin" />
+                <span>Memproses Masuk...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.25v3.15C3.26 21.36 7.33 24 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.25C.45 8.18 0 9.98 0 12s.45 3.82 1.25 5.42l4.03-3.15z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.25 6.58l4.03 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                  />
+                </svg>
+                <span>Masuk sebagai Administrator</span>
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={handleViewerLogin}
+            disabled={isLoggingIn}
+            className="w-full py-3 px-6 rounded-2xl glass-card hover:border-[var(--color-border-glass)] text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] font-medium text-xs flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-50"
+          >
+            <UserCheck className="w-4 h-4 text-[var(--color-gold-primary)]" />
+            <span>Masuk sebagai Tamu / Penonton</span>
+          </button>
+        </div>
 
         {/* Security & Policy Assurance */}
         <div className="mt-8 pt-6 border-t border-white/10 space-y-2">
           <div className="flex items-center justify-center gap-2 text-[11px] text-zinc-400">
             <Shield className="w-3.5 h-3.5 text-[var(--color-gold-primary)]" />
-            <span>Autentikasi Terenkripsi Firebase Auth</span>
+            <span>Autentikasi Terenkripsi</span>
           </div>
           <p className="text-[10px] text-zinc-500">
             Hak admin otomatis diberikan kepada <code className="text-amber-400/90">{ADMIN_EMAIL}</code>
