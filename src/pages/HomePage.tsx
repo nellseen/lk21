@@ -28,6 +28,15 @@ export const HomePage: React.FC = () => {
           movie={heroMovie}
           onOpenTrailer={(m) => setActiveTrailerMovie(m)}
         />
+      ) : error ? (
+        <div className="pt-32 pb-12 px-4 max-w-7xl mx-auto">
+          <EmptyState
+            title="Katalog Memerlukan Autentikasi"
+            description={error}
+            actionText="Masuk dengan Google"
+            actionLink="/login"
+          />
+        </div>
       ) : (
         <div className="pt-32 pb-12 px-4 max-w-7xl mx-auto">
           <EmptyState

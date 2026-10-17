@@ -9,7 +9,7 @@ import { Movie, MOVIE_CATEGORIES } from '../types';
 import { Compass, Filter, ArrowUpDown, Search, Sparkles } from 'lucide-react';
 
 export const BrowsePage: React.FC = () => {
-  const { movies, loading } = useMovies();
+  const { movies, loading, error } = useMovies();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const selectedCategory = searchParams.get('category') || 'ALL';
@@ -170,6 +170,13 @@ export const BrowsePage: React.FC = () => {
               ))}
             </div>
           </div>
+        ) : error ? (
+          <EmptyState
+            title="Katalog Memerlukan Autentikasi"
+            description={error}
+            actionText="Masuk dengan Google"
+            actionLink="/login"
+          />
         ) : (
           <EmptyState
             title="Tidak Ada Film yang Cocok"

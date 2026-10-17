@@ -2,9 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { isFirebaseConfigured, getFirebaseConfig, sanitizeDatabaseUrl } from '../../lib/firebase';
 import { AlertTriangle, Key, ExternalLink, X, CheckCircle } from 'lucide-react';
 
+import { useAuth } from '../../hooks/useAuth';
+
 export const FirebaseConfigNotice: React.FC = () => {
+  const { user, isAdmin } = useAuth();
   const isConfigured = isFirebaseConfigured();
-  const [isOpen, setIsOpen] = useState(!isConfigured);
+  // Only auto-open if not configured AND either not logged in or is admin
+  const [isOpen, setIsOpen] = useState(!isConfigured && (!user || isAdmin));
 
   const getSaved = () => {
     if (typeof window === 'undefined') return null;
@@ -22,10 +26,18 @@ export const FirebaseConfigNotice: React.FC = () => {
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
-    const handleOpen = () => setIsOpen(true);
+    const handleOpen = () => {
+      // Only allow opening if not logged in or if user is admin
+      if (!user || isAdmin) {
+        setIsOpen(true);
+      }
+    };
     window.addEventListener('open-firebase-config', handleOpen);
     return () => window.removeEventListener('open-firebase-config', handleOpen);
-  }, []);
+  }, [user, isAdmin]);
+
+  // If a regular non-admin user is logged in, hide config dialog completely
+  if (user && !isAdmin) return null;
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();

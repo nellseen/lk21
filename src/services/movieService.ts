@@ -100,11 +100,24 @@ export function subscribeToMovies(
       list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       onData(list);
     },
-    (firebaseError) => {
-      console.error('Firebase Realtime Database subscription error:', firebaseError);
-      const formattedMessage = formatDatabaseError(firebaseError);
+    (firebaseError: any) => {
+      const isPermissionDenied = 
+        firebaseError?.message?.includes('permission_denied') || 
+        firebaseError?.code === 'PERMISSION_DENIED';
+
+      if (isPermissionDenied) {
+        console.warn('Realtime Database read restricted: User must login or rules must have ".read": true.');
+      } else {
+        console.error('Firebase Realtime Database subscription error:', firebaseError);
+      }
+
+      onData([]);
       if (onError) {
-        onError(new Error(formattedMessage));
+        onError(new Error(
+          isPermissionDenied
+            ? 'Katalog film terproteksi. Silakan login atau perbarui izin baca (".read": true) di tab Rules Firebase Realtime Database.'
+            : formatDatabaseError(firebaseError)
+        ));
       }
     }
   );

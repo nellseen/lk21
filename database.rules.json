@@ -1,10 +1,10 @@
 {
   "rules": {
     "movies": {
-      ".read": "auth != null",
+      ".read": true,
       ".indexOn": ["featured", "createdAt", "category"],
       "$movieId": {
-        ".write": "auth != null && (auth.token.email === 'cristiandwihariantoro@gmail.com' || auth.token.email === 'bdushegegbdushegegegy@gmail.com')",
+        ".write": "auth != null && auth.token.email === 'cristiandwihariantoro@gmail.com'",
         ".validate": "newData.hasChildren(['title', 'description', 'posterUrl', 'driveUrl', 'category', 'featured', 'createdAt', 'updatedAt'])",
         "title": {
           ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"

@@ -191,25 +191,27 @@ export const Navbar: React.FC = () => {
                   </div>
 
                   {isAdmin && (
-                    <Link
-                      to="/admin"
-                      className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[var(--color-gold-primary)] hover:bg-white/5 rounded-xl transition-colors mb-1"
-                    >
-                      <ShieldCheck className="w-4 h-4" />
-                      Studio Panel Admin
-                    </Link>
-                  )}
+                    <>
+                      <Link
+                        to="/admin"
+                        className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-[var(--color-gold-primary)] hover:bg-white/5 rounded-xl transition-colors mb-1"
+                      >
+                        <ShieldCheck className="w-4 h-4" />
+                        Studio Panel Admin
+                      </Link>
 
-                  <button
-                    onClick={() => {
-                      setUserDropdownOpen(false);
-                      window.dispatchEvent(new CustomEvent('open-firebase-config'));
-                    }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/5 rounded-xl transition-colors cursor-pointer mb-1"
-                  >
-                    <Sparkles className="w-4 h-4 text-[var(--color-gold-primary)]" />
-                    <span>Pengaturan Firebase</span>
-                  </button>
+                      <button
+                        onClick={() => {
+                          setUserDropdownOpen(false);
+                          window.dispatchEvent(new CustomEvent('open-firebase-config'));
+                        }}
+                        className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-gold-primary)] hover:bg-white/5 rounded-xl transition-colors cursor-pointer mb-1"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                        <span>Pengaturan Firebase</span>
+                      </button>
+                    </>
+                  )}
 
                   <button
                     onClick={handleLogout}

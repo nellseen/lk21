@@ -51,21 +51,25 @@ export default function App() {
               }
             />
 
-            {/* Protected Routes (Requires Google Authentication) */}
-            <Route
-              element={
-                <ProtectedRoute>
-                  <AppLayout />
-                </ProtectedRoute>
-              }
-            >
+            {/* Main Application Layout */}
+            <Route element={<AppLayout />}>
+              {/* Public Catalog Routes (No login required when web first opens) */}
               <Route path="/" element={<HomePage />} />
               <Route path="/browse" element={<BrowsePage />} />
               <Route path="/search" element={<SearchPage />} />
               <Route path="/movie/:id" element={<MovieDetailPage />} />
-              <Route path="/watch/:id" element={<WatchPage />} />
 
-              {/* Admin Routes (Restricted to cristiandwihariantoro@gmail.com) */}
+              {/* Streaming Watch Page (Requires Google Authentication) */}
+              <Route
+                path="/watch/:id"
+                element={
+                  <ProtectedRoute>
+                    <WatchPage />
+                  </ProtectedRoute>
+                }
+              />
+
+              {/* Admin Routes (Restricted strictly to cristiandwihariantoro@gmail.com) */}
               <Route
                 path="/admin"
                 element={
@@ -91,7 +95,7 @@ export default function App() {
                 }
               />
 
-              {/* 404 Route within protected layout */}
+              {/* 404 Route */}
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Routes>
