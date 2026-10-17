@@ -18,6 +18,8 @@ import { validateMovieForm, ValidationErrors } from '../../lib/validators';
 import { parseYouTubeUrl } from '../../lib/youtube';
 import { parseGoogleDriveUrl } from '../../lib/googleDrive';
 
+import { subscribeToDatabaseConnection } from '../../services/movieService';
+
 interface MovieFormProps {
   initialData?: MovieFormData;
   onSubmit: (data: MovieFormData) => Promise<void>;
@@ -45,6 +47,14 @@ export const MovieForm: React.FC<MovieFormProps> = ({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [dbConnected, setDbConnected] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeToDatabaseConnection((connected) => {
+      setDbConnected(connected);
+    });
+    return () => unsub();
+  }, []);
 
   // Live parsed states for previews
   const [trailerPreview, setTrailerPreview] = useState<string | null>(null);
@@ -138,14 +148,43 @@ export const MovieForm: React.FC<MovieFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Database Connection Status Bar */}
+      <div className="flex items-center justify-between p-3 rounded-xl bg-[var(--color-bg-secondary)] border border-[var(--color-border-subtle)] text-xs">
+        <div className="flex items-center gap-2">
+          <span className={`w-2.5 h-2.5 rounded-full ${dbConnected ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-amber-500 animate-pulse'}`} />
+          <span className="text-[var(--color-text-secondary)] font-medium">
+            Status Database:{' '}
+            <strong className={dbConnected ? 'text-emerald-400' : 'text-amber-400'}>
+              {dbConnected ? 'Terhubung (Online)' : 'Menghubungkan ke Realtime Database...'}
+            </strong>
+          </span>
+        </div>
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent('open-firebase-config'))}
+          className="text-[11px] text-[var(--color-gold-primary)] hover:underline cursor-pointer"
+        >
+          Ubah Konfigurasi / URL
+        </button>
+      </div>
+
       {/* Notifications */}
       {submitError && (
-        <div className="p-4 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 text-sm flex items-start gap-3 animate-fadeIn">
-          <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-          <div>
-            <h5 className="font-bold">Gagal Menyimpan Data</h5>
-            <p className="mt-0.5 leading-relaxed">{submitError}</p>
+        <div className="p-4 rounded-xl bg-red-500/15 border border-red-500/30 text-red-400 text-sm flex flex-col sm:flex-row items-start justify-between gap-3 animate-fadeIn">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
+            <div>
+              <h5 className="font-bold">Gagal Menyimpan Data</h5>
+              <p className="mt-0.5 leading-relaxed text-xs">{submitError}</p>
+            </div>
           </div>
+          <button
+            type="button"
+            onClick={() => window.dispatchEvent(new CustomEvent('open-firebase-config'))}
+            className="shrink-0 px-3 py-1.5 rounded-lg bg-red-500/20 hover:bg-red-500/30 text-red-300 text-xs font-semibold border border-red-500/30 cursor-pointer"
+          >
+            Ubah URL Database
+          </button>
         </div>
       )}
 

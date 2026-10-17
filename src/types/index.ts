@@ -48,4 +48,10 @@ export const MOVIE_CATEGORIES = [
 
 export type MovieCategory = typeof MOVIE_CATEGORIES[number];
 
+export const ADMIN_EMAILS: string[] = [
+  'cristiandwihariantoro@gmail.com',
+  'bdushegegbdushegegegy@gmail.com',
+  (import.meta.env.VITE_ADMIN_EMAIL || '').toLowerCase()
+].filter(Boolean);
+
 export const ADMIN_EMAIL = 'cristiandwihariantoro@gmail.com';

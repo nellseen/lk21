@@ -61,7 +61,9 @@ if (firebaseConfig && firebaseConfig.apiKey) {
   try {
     app = getApps().length > 0 ? getApp() : initializeApp(firebaseConfig);
     auth = getAuth(app);
-    database = getDatabase(app);
+    database = firebaseConfig.databaseURL 
+      ? getDatabase(app, firebaseConfig.databaseURL) 
+      : getDatabase(app);
     googleProvider = new GoogleAuthProvider();
     googleProvider.setCustomParameters({
       prompt: 'select_account'

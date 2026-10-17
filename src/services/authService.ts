@@ -5,11 +5,11 @@ import {
   User 
 } from 'firebase/auth';
 import { auth, googleProvider, isFirebaseConfigured } from '../lib/firebase';
-import { AuthUser, ADMIN_EMAIL } from '../types';
+import { AuthUser, ADMIN_EMAILS } from '../types';
 
 export function isUserAdmin(user: AuthUser | User | null): boolean {
   if (!user || !user.email) return false;
-  return user.email.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  return ADMIN_EMAILS.includes(user.email.toLowerCase());
 }
 
 export function formatAuthError(errorCode: string, defaultMessage?: string): string {

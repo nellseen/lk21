@@ -1,25 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { isFirebaseConfigured, getFirebaseConfig } from '../../lib/firebase';
 import { AlertTriangle, Key, ExternalLink, X, CheckCircle } from 'lucide-react';
 
 export const FirebaseConfigNotice: React.FC = () => {
   const isConfigured = isFirebaseConfigured();
   const [isOpen, setIsOpen] = useState(!isConfigured);
-  const [apiKey, setApiKey] = useState('');
-  const [projectId, setProjectId] = useState('');
-  const [databaseUrl, setDatabaseUrl] = useState('');
+
+  const getSaved = () => {
+    if (typeof window === 'undefined') return null;
+    const item = localStorage.getItem('aurastream_firebase_config');
+    if (item) {
+      try { return JSON.parse(item); } catch { return null; }
+    }
+    return null;
+  };
+
+  const initial = getSaved();
+  const [apiKey, setApiKey] = useState(initial?.apiKey || import.meta.env.VITE_FIREBASE_API_KEY || '');
+  const [projectId, setProjectId] = useState(initial?.projectId || import.meta.env.VITE_FIREBASE_PROJECT_ID || '');
+  const [databaseUrl, setDatabaseUrl] = useState(initial?.databaseURL || import.meta.env.VITE_FIREBASE_DATABASE_URL || '');
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  if (isConfigured && !isOpen) return null;
+  useEffect(() => {
+    const handleOpen = () => setIsOpen(true);
+    window.addEventListener('open-firebase-config', handleOpen);
+    return () => window.removeEventListener('open-firebase-config', handleOpen);
+  }, []);
 
   const handleSaveConfig = (e: React.FormEvent) => {
     e.preventDefault();
     if (!apiKey || !projectId) return;
 
+    const trimmedUrl = databaseUrl.trim();
+    const finalDbUrl = trimmedUrl || `https://${projectId.trim()}-default-rtdb.asia-southeast1.firebasedatabase.app`;
+
     const customConfig = {
       apiKey: apiKey.trim(),
       authDomain: `${projectId.trim()}.firebaseapp.com`,
-      databaseURL: databaseUrl.trim() || `https://${projectId.trim()}-default-rtdb.firebaseio.com`,
+      databaseURL: finalDbUrl,
       projectId: projectId.trim(),
       storageBucket: `${projectId.trim()}.appspot.com`,
       messagingSenderId: '',
@@ -30,7 +48,7 @@ export const FirebaseConfigNotice: React.FC = () => {
     setSavedSuccess(true);
     setTimeout(() => {
       window.location.reload();
-    }, 1200);
+    }, 1000);
   };
 
   if (!isOpen) return null;
@@ -110,15 +128,18 @@ export const FirebaseConfigNotice: React.FC = () => {
             </div>
             <div>
               <label className="block text-xs font-semibold text-[var(--color-text-secondary)] mb-1">
-                Realtime Database URL (Opsional jika default)
+                Realtime Database URL (Salin dari Firebase Console)
               </label>
               <input
                 type="text"
-                placeholder="https://my-streaming-project-default-rtdb.firebaseio.com"
+                placeholder="https://your-project-default-rtdb.asia-southeast1.firebasedatabase.app"
                 value={databaseUrl}
                 onChange={(e) => setDatabaseUrl(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl bg-[var(--color-bg-primary)] border border-[var(--color-border-subtle)] focus:border-[var(--color-gold-primary)] outline-none text-sm text-[var(--color-text-primary)]"
+                className="w-full px-4 py-2.5 rounded-xl bg-[var(--color-bg-primary)] border border-[var(--color-border-subtle)] focus:border-[var(--color-gold-primary)] outline-none text-sm text-[var(--color-text-primary)] font-mono text-xs"
               />
+              <p className="text-[10px] text-[var(--color-text-muted)] mt-1 leading-relaxed">
+                Salin URL tepat di bagian atas pohon data Firebase Realtime Database Anda (misal: <code>https://...firebasedatabase.app</code> atau <code>https://...firebaseio.com</code>).
+              </p>
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-2">

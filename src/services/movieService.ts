@@ -11,10 +11,41 @@ import {
 import { database, isFirebaseConfigured } from '../lib/firebase';
 import { Movie, MovieFormData } from '../types';
 
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 8000, customErrorMessage?: string): Promise<T> {
+  let timer: any;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(new Error(
+        customErrorMessage || 
+        'Koneksi ke Firebase Realtime Database timeout (tidak merespon dalam 8 detik). Pastikan Realtime Database sudah dibuat di Firebase Console dan URL Realtime Database sesuai dengan region (misal: .asia-southeast1.firebasedatabase.app).'
+      ));
+    }, timeoutMs);
+  });
+
+  return Promise.race([
+    promise.then((res) => {
+      clearTimeout(timer);
+      return res;
+    }),
+    timeoutPromise
+  ]);
+}
+
+export function subscribeToDatabaseConnection(callback: (connected: boolean) => void): Unsubscribe {
+  if (!database) {
+    callback(false);
+    return () => {};
+  }
+  const connectedRef = ref(database, '.info/connected');
+  return onValue(connectedRef, (snap) => {
+    callback(Boolean(snap.val()));
+  });
+}
+
 export function formatDatabaseError(error: any): string {
   const message = error?.message || '';
   if (message.includes('PERMISSION_DENIED') || error?.code === 'PERMISSION_DENIED') {
-    return 'Akses ditolak oleh Firebase Security Rules. Hanya administrator terverifikasi (cristiandwihariantoro@gmail.com) yang diizinkan untuk menambah, mengubah, atau menghapus katalog.';
+    return 'Akses ditolak oleh Firebase Security Rules. Pastikan tab "Rules" di Firebase Realtime Database sudah dipublikasikan sesuai petunjuk dan akun Google Anda adalah administrator yang diizinkan.';
   }
   if (message.includes('NETWORK_ERROR') || message.includes('disconnected')) {
     return 'Koneksi ke Firebase Realtime Database terputus. Mohon periksa jaringan internet Anda.';
@@ -137,7 +168,11 @@ export async function createMovie(data: MovieFormData): Promise<string> {
       updatedAt: now
     };
 
-    await set(newRef, moviePayload);
+    await withTimeout(
+      set(newRef, moviePayload),
+      8000,
+      'Koneksi ke Firebase Realtime Database timeout (8 detik). Pastikan databaseURL cocok dengan region Firebase (misal: .asia-southeast1.firebasedatabase.app).'
+    );
     return newId;
   } catch (error: any) {
     throw new Error(formatDatabaseError(error));
@@ -163,7 +198,11 @@ export async function updateMovie(id: string, data: MovieFormData): Promise<void
       updatedAt: now
     };
 
-    await update(movieRef, updatePayload);
+    await withTimeout(
+      update(movieRef, updatePayload),
+      8000,
+      'Koneksi ke Firebase Realtime Database timeout (8 detik) saat memperbarui film.'
+    );
   } catch (error: any) {
     throw new Error(formatDatabaseError(error));
   }
@@ -176,7 +215,11 @@ export async function deleteMovie(id: string): Promise<void> {
 
   try {
     const movieRef = ref(database, `movies/${id}`);
-    await remove(movieRef);
+    await withTimeout(
+      remove(movieRef),
+      8000,
+      'Koneksi ke Firebase Realtime Database timeout (8 detik) saat menghapus film.'
+    );
   } catch (error: any) {
     throw new Error(formatDatabaseError(error));
   }

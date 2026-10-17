@@ -201,6 +201,17 @@ export const Navbar: React.FC = () => {
                   )}
 
                   <button
+                    onClick={() => {
+                      setUserDropdownOpen(false);
+                      window.dispatchEvent(new CustomEvent('open-firebase-config'));
+                    }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:bg-white/5 rounded-xl transition-colors cursor-pointer mb-1"
+                  >
+                    <Sparkles className="w-4 h-4 text-[var(--color-gold-primary)]" />
+                    <span>Pengaturan Firebase</span>
+                  </button>
+
+                  <button
                     onClick={handleLogout}
                     className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-red-400 hover:bg-red-500/10 rounded-xl transition-colors cursor-pointer"
                   >
