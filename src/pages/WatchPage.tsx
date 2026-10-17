@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { getMovieById } from '../services/movieService';
 import { parseGoogleDriveUrl } from '../lib/googleDrive';
@@ -13,8 +13,14 @@ import {
   Info, 
   Sparkles, 
   Loader2,
-  Film
+  Film,
+  Maximize,
+  Minimize,
+  Tv,
+  Eye
 } from 'lucide-react';
+
+export type PlayerMode = 'fit' | 'frameless' | 'theater' | 'classic';
 
 export const WatchPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -25,6 +31,10 @@ export const WatchPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [iframeKey, setIframeKey] = useState(0);
   const [iframeLoading, setIframeLoading] = useState(true);
+  const [playerMode, setPlayerMode] = useState<PlayerMode>('fit');
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  const playerContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -55,14 +65,29 @@ export const WatchPage: React.FC = () => {
 
     loadMovie();
 
+    const handleFsChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', handleFsChange);
+
     return () => {
       isMounted = false;
+      document.removeEventListener('fullscreenchange', handleFsChange);
     };
   }, [id]);
 
   const handleReloadIframe = () => {
     setIframeLoading(true);
     setIframeKey((prev) => prev + 1);
+  };
+
+  const toggleFullscreen = () => {
+    if (!playerContainerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      playerContainerRef.current.requestFullscreen().catch(() => {});
+    }
   };
 
   if (loading) {
@@ -103,43 +128,115 @@ export const WatchPage: React.FC = () => {
   const driveResult = parseGoogleDriveUrl(movie.driveUrl);
 
   return (
-    <div className="min-h-screen bg-[var(--color-bg-primary)] pt-20 pb-20">
-      {/* Top Bar with Back Navigation */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-        <div className="flex items-center justify-between gap-4">
+    <div className="min-h-screen bg-[var(--color-bg-primary)] pt-20 pb-20 transition-all duration-300">
+      {/* Top Bar with Back Navigation & Player Sizing Modes */}
+      <div className={`mx-auto px-4 sm:px-6 lg:px-8 py-3 transition-all duration-300 ${
+        playerMode === 'theater' ? 'max-w-full' : 'max-w-7xl'
+      }`}>
+        <div className="flex flex-wrap items-center justify-between gap-3">
           <button
             onClick={() => navigate(`/movie/${movie.id}`)}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl glass-card text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-glass)] transition-all cursor-pointer"
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-xl glass-card text-xs font-semibold text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)] hover:border-[var(--color-border-glass)] transition-all cursor-pointer"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>Kembali ke Detail Film</span>
+            <span>Detail Film</span>
           </button>
 
-          <div className="flex items-center gap-2">
-            {movie.featured && (
-              <Badge variant="featured" className="text-xs hidden sm:inline-flex">
-                <Sparkles className="w-3 h-3 mr-1 inline" />
-                Unggulan
-              </Badge>
-            )}
-            <Badge variant="gold" className="text-xs">
-              {movie.category}
-            </Badge>
+          {/* Sizing & Mode Controls */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center p-1 rounded-xl glass-card border border-[var(--color-border-subtle)] text-xs">
+              <button
+                onClick={() => setPlayerMode('fit')}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  playerMode === 'fit'
+                    ? 'gold-button shadow-sm font-bold text-black'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+                title="Tinggi proporsional + header Drive (Subtitle dan kontrol tidak terpotong)"
+              >
+                Pas Subtitle (Anti-Potong)
+              </button>
+
+              <button
+                onClick={() => setPlayerMode('frameless')}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  playerMode === 'frameless'
+                    ? 'gold-button shadow-sm font-bold text-black'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+                title="Sembunyikan bar atas Google Drive agar tampilan video 100% bersih seperti bioskop"
+              >
+                Sinema Bersih
+              </button>
+
+              <button
+                onClick={() => setPlayerMode('theater')}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  playerMode === 'theater'
+                    ? 'gold-button shadow-sm font-bold text-black'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+                title="Mode Teater Lebar (Layar Penuh Horizontal)"
+              >
+                Teater
+              </button>
+
+              <button
+                onClick={() => setPlayerMode('classic')}
+                className={`px-3 py-1.5 rounded-lg font-medium transition-all cursor-pointer ${
+                  playerMode === 'classic'
+                    ? 'gold-button shadow-sm font-bold text-black'
+                    : 'text-[var(--color-text-secondary)] hover:text-[var(--color-text-primary)]'
+                }`}
+                title="16:9 Standar"
+              >
+                16:9
+              </button>
+            </div>
+
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 rounded-xl glass-card border border-[var(--color-border-subtle)] hover:border-[var(--color-border-glass)] text-[var(--color-text-secondary)] hover:text-[var(--color-gold-primary)] transition-colors cursor-pointer"
+              title={isFullscreen ? 'Keluar Layar Penuh' : 'Layar Penuh (Fullscreen)'}
+              aria-label="Layar Penuh"
+            >
+              {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+            </button>
           </div>
         </div>
       </div>
 
       {/* Cinema Screen Container */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="relative rounded-2xl overflow-hidden glass-panel border border-[var(--color-border-glass)] shadow-2xl bg-black">
+      <div
+        ref={playerContainerRef}
+        className={`mx-auto transition-all duration-300 ${
+          playerMode === 'theater'
+            ? 'max-w-full px-0 sm:px-4'
+            : 'max-w-7xl px-4 sm:px-6 lg:px-8'
+        }`}
+      >
+        <div className={`relative overflow-hidden glass-panel border border-[var(--color-border-glass)] shadow-2xl bg-black ${
+          playerMode === 'theater' ? 'rounded-none sm:rounded-2xl' : 'rounded-2xl'
+        }`}>
           {/* Subtle gold glow behind player */}
           <div className="absolute -inset-1 bg-gradient-to-r from-amber-600/10 via-amber-400/10 to-amber-600/10 blur-xl opacity-50 -z-10" />
 
           {driveResult.isValid && driveResult.embedUrl ? (
-            <div className="relative aspect-video w-full bg-black flex items-center justify-center">
+            <div
+              className={`relative w-full bg-black flex items-center justify-center overflow-hidden transition-all duration-300`}
+              style={
+                playerMode === 'fit'
+                  ? { height: 'calc(min(100vw - 32px, 1280px) * 0.5625 + 56px)', maxHeight: '82vh' }
+                  : playerMode === 'theater'
+                  ? { height: 'min(78vh, 850px)', minHeight: '440px' }
+                  : playerMode === 'frameless' || playerMode === 'classic'
+                  ? { aspectRatio: '16/9', maxHeight: '80vh' }
+                  : undefined
+              }
+            >
               {/* Loading spinner while iframe initializes */}
               {iframeLoading && (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-10">
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/90 z-20">
                   <Loader2 className="w-8 h-8 text-[var(--color-gold-primary)] animate-spin" />
                   <p className="mt-3 text-xs text-zinc-400 font-mono">
                     Memuat Aliran Video Google Drive...
@@ -151,7 +248,16 @@ export const WatchPage: React.FC = () => {
                 key={iframeKey}
                 src={driveResult.embedUrl}
                 title={`Pemutar Film - ${movie.title}`}
-                className="w-full h-full border-0"
+                className={`border-0 ${
+                  playerMode === 'frameless'
+                    ? 'absolute -top-[52px] left-0 w-full'
+                    : 'w-full h-full'
+                }`}
+                style={
+                  playerMode === 'frameless'
+                    ? { height: 'calc(100% + 52px)' }
+                    : { width: '100%', height: '100%' }
+                }
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                 allowFullScreen
                 loading="lazy"
