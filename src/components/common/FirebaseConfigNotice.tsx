@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { isFirebaseConfigured, getFirebaseConfig } from '../../lib/firebase';
+import { isFirebaseConfigured, getFirebaseConfig, sanitizeDatabaseUrl } from '../../lib/firebase';
 import { AlertTriangle, Key, ExternalLink, X, CheckCircle } from 'lucide-react';
 
 export const FirebaseConfigNotice: React.FC = () => {
@@ -31,8 +31,7 @@ export const FirebaseConfigNotice: React.FC = () => {
     e.preventDefault();
     if (!apiKey || !projectId) return;
 
-    const trimmedUrl = databaseUrl.trim();
-    const finalDbUrl = trimmedUrl || `https://${projectId.trim()}-default-rtdb.asia-southeast1.firebasedatabase.app`;
+    const finalDbUrl = sanitizeDatabaseUrl(databaseUrl.trim(), projectId.trim());
 
     const customConfig = {
       apiKey: apiKey.trim(),
